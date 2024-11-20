@@ -1,36 +1,104 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Legislative News Frontend
 
-## Getting Started
+A Next.js application for displaying legislative news with caching implementation using React Query.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Server-Side Rendering (SSR) for improved SEO and performance
+- Client-side data fetching with React Query
+- Pagination
+- Search functionality with debouncing
+- Filter by state and topic
+- Responsive design
+
+## Caching Strategy
+
+### React Query Implementation
+
+The application uses React Query for data fetching and caching:
+
+```typescript
+// Fetch and cache news articles
+export function useNews(filters: NewsFilters) {
+  return useInfiniteQuery({
+    queryKey: ['news', filters],
+    queryFn: ({ pageParam = 1 }) => fetchNews(pageParam, filters),
+    getNextPageParam: (lastPage) => 
+      lastPage.hasMore ? lastPage.page + 1 : undefined,
+    initialPageParam: 1,
+  });
+}
+
+// Cache metadata (states, topics)
+export function useStates() {
+  return useQuery({
+    queryKey: ['states'],
+    queryFn: () => fetchMetadata('states'),
+  });
+}
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Key Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. **Automatic Background Updates**: React Query automatically refreshes stale data in the background.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2. **Cache Invalidation**: 
+   - Automatic cache invalidation when filters change
+   - Manual invalidation available through React Query's `invalidateQueries`
 
-## Learn More
+3. **Infinite Scroll Or Pagination**: 
+   - Uses `useInfiniteQuery` for pagination
+   - Caches pages individually
+   - Maintains scroll position when navigating back
 
-To learn more about Next.js, take a look at the following resources:
+4. **Metadata Caching**:
+   - States and topics are cached separately
+   - Lower refresh rate for relatively static data
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Setup
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Install dependencies:
+```bash
+npm install
+```
 
-## Deploy on Vercel
+2. Configure environment variables:
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:8080/api
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+3. Run development server:
+```bash
+npm run dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Performance Optimizations
+
+1. **Debounced Search**:
+```typescript
+const [debouncedSearch] = useDebounce(filters.search, 500);
+```
+- Reducing unnecessary api calls.
+
+2. **Pagination**:
+- Implements infinite scroll with React Query
+- Only fetches data when needed
+- Maintains smooth scrolling experience
+
+3. **Error Boundaries**:
+- Graceful error handling
+- Automatic retries for failed requests
+
+## API Integration
+
+The frontend connects to the backend API with these main endpoints:
+
+- `GET /api/news`: Fetch paginated news articles
+- `GET /api/news/metadata/states`: Get available states
+- `GET /api/news/metadata/topics`: Get available topics
+
+## Build
+
+```bash
+npm run build
+```
